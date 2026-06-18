@@ -57,34 +57,85 @@ def solve_beam(data: BeamInput, step: float = 0.01) -> BeamResult:
     sum_p_val = sum_udl_val = sum_uvl_val = 0.0
     is_simple = data.beam_type == "simple"
 
+    # ==========================================================
+    # TÍNH PHẢN LỰC GỐI / PHẢN LỰC NGÀM
+    # ==========================================================
+
     if is_simple:
+
+        # -------------------------
+        # Point loads
+        # -------------------------
         if cp > 0:
             sum_p_mom = float(np.sum(p[:, 0] * p[:, 1]))
             sum_p_val = float(np.sum(p[:, 0]))
+
+        # -------------------------
+        # UDL
+        # -------------------------
         if cudl > 0:
             len_udl = udl[:, 2] - udl[:, 1]
             val_udl = udl[:, 0] * len_udl
             pos_udl = udl[:, 1] + len_udl / 2
+
             sum_udl_mom = float(np.sum(val_udl * pos_udl))
             sum_udl_val = float(np.sum(val_udl))
+
+        # -------------------------
+        # UVL
+        # -------------------------
         if cuvl > 0:
+
             for q_max, a, b in uvl:
+
                 span = b - a
+
                 val = 0.5 * q_max * span
-                pos = a + (2 * span / 3 if data.uvl_type == "increase" else span / 3)
+
+                if data.uvl_type == "increase":
+                    pos = a + 2 * span / 3
+                else:
+                    pos = a + span / 3
+
                 sum_uvl_mom += val * pos
                 sum_uvl_val += val
+
+        # -------------------------
+        # Point moments
+        # -------------------------
         if cm > 0:
             sum_m_mom = float(np.sum(m[:, 0]))
 
-        r2 = -(sum_p_mom + sum_udl_mom + sum_uvl_mom + sum_m_mom) / l
-        r1 = -(sum_p_val + sum_udl_val + sum_uvl_val + r2)
+        # -------------------------
+        # Reactions
+        # -------------------------
+        r2 = -(
+                sum_p_mom
+                + sum_udl_mom
+                + sum_uvl_mom
+                + sum_m_mom
+        ) / l
+
+        r1 = -(
+                sum_p_val
+                + sum_udl_val
+                + sum_uvl_val
+                + r2
+        )
+
         shear += r1
         moment += r1 * x
-        else:
+
+    else:
+
+        # ======================================================
+        # DẦM CONSOLE
+        # ======================================================
+
         r1 = 0.0
         r2 = 0.0
 
+        # Tổng tải đứng
         total_vertical_load = (
                 sum(load for load, _ in data.point_loads)
                 + sum(q * (b - a) for q, a, b in data.udls)
@@ -93,30 +144,49 @@ def solve_beam(data: BeamInput, step: float = 0.01) -> BeamResult:
 
         rv_fixed = -total_vertical_load
 
+        # -------------------------
+        # Moment do tải tập trung
+        # -------------------------
         moment_p = sum(
             load * (l - pos)
             for load, pos in data.point_loads
         )
 
+        # -------------------------
+        # Moment do UDL
+        # -------------------------
         moment_udl = sum(
-            q * (b - a) * (l - (a + (b - a) / 2))
+            q * (b - a) *
+            (l - (a + (b - a) / 2))
             for q, a, b in data.udls
         )
 
+        # -------------------------
+        # Moment do UVL
+        # -------------------------
         moment_uvl = 0.0
 
         for q, a, b in data.uvls:
+
             span = b - a
 
-            xr = (
-                a + 2 * span / 3
-                if data.uvl_type == "increase"
-                else a + span / 3
+            if data.uvl_type == "increase":
+                xr = a + 2 * span / 3
+            else:
+                xr = a + span / 3
+
+            moment_uvl += (
+                    0.5 * q * span *
+                    (l - xr)
             )
 
-            moment_uvl += 0.5 * q * span * (l - xr)
-
-        moment_m = sum(mi for mi, _ in data.point_moments)
+        # -------------------------
+        # Moment tập trung
+        # -------------------------
+        moment_m = sum(
+            mi
+            for mi, _ in data.point_moments
+        )
 
         mr_fixed = -(
                 moment_p
@@ -124,7 +194,6 @@ def solve_beam(data: BeamInput, step: float = 0.01) -> BeamResult:
                 + moment_uvl
                 + moment_m
         )
-
     theta_int += (r1 * x**2) / 2
     w_int += (r1 * x**3) / 6
 
