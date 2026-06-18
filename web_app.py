@@ -410,55 +410,108 @@ def plot_elastic(data: BeamInput, result: BeamResult | None) -> go.Figure:
 
 
 def metric_strip(result: BeamResult | None, data: BeamInput) -> None:
+
     if result is None:
-        if data.beam_type == "simple":
 
-            values = [
-                ("R1 / R2",
-                 f"{result.r1:.2f} / {result.r2:.2f} kN"),
+        values = [
+            ("Span", f"{data.length:.2f} m"),
+            ("Point loads", str(len(data.point_loads))),
+            ("UDL / UVL",
+             f"{len(data.udls)} / {len(data.uvls)}"),
+            ("Status", "Ready"),
+        ]
 
-                ("Vmax",
-                 f"{result.shear[idx_v]:.2f} kN"),
-
-                ("Mmax",
-                 f"{result.moment[idx_m]:.2f} kNm"),
-
-                ("wmax",
-                 f"{result.deflection[idx_w]:.2f} / EI"),
-            ]
-
-        else:
-
-            values = [
-                ("RV",
-                 f"{result.rv_fixed:.2f} kN"),
-
-                ("MR",
-                 f"{result.mr_fixed:.2f} kNm"),
-
-                ("Vmax",
-                 f"{result.shear[idx_v]:.2f} kN"),
-
-                ("wmax",
-                 f"{result.deflection[idx_w]:.2f} / EI"),
-            ]
     else:
+
         idx_v = int(np.argmax(np.abs(result.shear)))
         idx_m = int(np.argmax(np.abs(result.moment)))
         idx_w = int(np.argmax(np.abs(result.deflection)))
-        values = [
-            ("R1 / R2", f"{result.r1:.2f} / {result.r2:.2f} kN"),
-            ("Vmax", f"{result.shear[idx_v]:.2f} kN"),
-            ("Mmax", f"{result.moment[idx_m]:.2f} kNm"),
-            ("wmax", f"{result.deflection[idx_w]:.2f} / EI"),
-        ]
+
+
+        # Dầm đơn giản
+        if data.beam_type == "simple":
+
+            r1 = getattr(result, "r1", 0)
+            r2 = getattr(result, "r2", 0)
+
+            values = [
+
+                (
+                    "R1 / R2",
+                    f"{r1:.2f} / {r2:.2f} kN"
+                ),
+
+                (
+                    "Vmax",
+                    f"{result.shear[idx_v]:.2f} kN"
+                ),
+
+                (
+                    "Mmax",
+                    f"{result.moment[idx_m]:.2f} kNm"
+                ),
+
+                (
+                    "wmax",
+                    f"{result.deflection[idx_w]:.4f}"
+                )
+
+            ]
+
+
+        # Dầm console
+        else:
+
+            rv = getattr(result, "rv_fixed", 0)
+            mr = getattr(result, "mr_fixed", 0)
+
+            values = [
+
+                (
+                    "RV",
+                    f"{rv:.2f} kN"
+                ),
+
+                (
+                    "MR",
+                    f"{mr:.2f} kNm"
+                ),
+
+                (
+                    "Vmax",
+                    f"{result.shear[idx_v]:.2f} kN"
+                ),
+
+                (
+                    "wmax",
+                    f"{result.deflection[idx_w]:.4f}"
+                )
+
+            ]
+
+
     cards = "".join(
-        f"<div class='metric-card'><div class='metric-label'>{label}</div><div class='metric-value'>{value}</div></div>"
-        for label, value in values
+
+        f"""
+        <div class='metric-card'>
+            <div class='metric-label'>{label}</div>
+            <div class='metric-value'>{value}</div>
+        </div>
+        """
+
+        for label,value in values
+
     )
-    st.markdown(f"<div class='metric-strip'>{cards}</div>", unsafe_allow_html=True)
 
 
+    st.markdown(
+        f"""
+        <div class='metric-strip'>
+        {cards}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 def reset_problem() -> None:
     """
     Tạo bài toán mới:
