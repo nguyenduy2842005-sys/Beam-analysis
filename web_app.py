@@ -411,12 +411,37 @@ def plot_elastic(data: BeamInput, result: BeamResult | None) -> go.Figure:
 
 def metric_strip(result: BeamResult | None, data: BeamInput) -> None:
     if result is None:
-        values = [
-            ("Span", f"{data.length:.2f} m"),
-            ("Point loads", str(len(data.point_loads))),
-            ("UDL / UVL", f"{len(data.udls)} / {len(data.uvls)}"),
-            ("Status", "Ready"),
-        ]
+        if data.beam_type == "simple":
+
+            values = [
+                ("R1 / R2",
+                 f"{result.r1:.2f} / {result.r2:.2f} kN"),
+
+                ("Vmax",
+                 f"{result.shear[idx_v]:.2f} kN"),
+
+                ("Mmax",
+                 f"{result.moment[idx_m]:.2f} kNm"),
+
+                ("wmax",
+                 f"{result.deflection[idx_w]:.2f} / EI"),
+            ]
+
+        else:
+
+            values = [
+                ("RV",
+                 f"{result.rv_fixed:.2f} kN"),
+
+                ("MR",
+                 f"{result.mr_fixed:.2f} kNm"),
+
+                ("Vmax",
+                 f"{result.shear[idx_v]:.2f} kN"),
+
+                ("wmax",
+                 f"{result.deflection[idx_w]:.2f} / EI"),
+            ]
     else:
         idx_v = int(np.argmax(np.abs(result.shear)))
         idx_m = int(np.argmax(np.abs(result.moment)))

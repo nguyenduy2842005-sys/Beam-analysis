@@ -23,13 +23,20 @@ class BeamResult:
     moment: np.ndarray
     theta: np.ndarray
     deflection: np.ndarray
+
     r1: float
     r2: float
-    report: str
+
+    rv_fixed: float = 0.0
+    mr_fixed: float = 0.0
+
+    report: str = ""
 
 
 def solve_beam(data: BeamInput, step: float = 0.01) -> BeamResult:
     """Port of the MATLAB GUIDE BeamAnalysis solve_Callback logic."""
+    rv_fixed = 0.0
+    mr_fixed = 0.0
     l = float(data.length)
     if l <= 0:
         raise ValueError("Span phải là số dương.")
@@ -74,9 +81,49 @@ def solve_beam(data: BeamInput, step: float = 0.01) -> BeamResult:
         r1 = -(sum_p_val + sum_udl_val + sum_uvl_val + r2)
         shear += r1
         moment += r1 * x
-    else:
+        else:
         r1 = 0.0
         r2 = 0.0
+
+        total_vertical_load = (
+                sum(load for load, _ in data.point_loads)
+                + sum(q * (b - a) for q, a, b in data.udls)
+                + sum(0.5 * q * (b - a) for q, a, b in data.uvls)
+        )
+
+        rv_fixed = -total_vertical_load
+
+        moment_p = sum(
+            load * (l - pos)
+            for load, pos in data.point_loads
+        )
+
+        moment_udl = sum(
+            q * (b - a) * (l - (a + (b - a) / 2))
+            for q, a, b in data.udls
+        )
+
+        moment_uvl = 0.0
+
+        for q, a, b in data.uvls:
+            span = b - a
+
+            xr = (
+                a + 2 * span / 3
+                if data.uvl_type == "increase"
+                else a + span / 3
+            )
+
+            moment_uvl += 0.5 * q * span * (l - xr)
+
+        moment_m = sum(mi for mi, _ in data.point_moments)
+
+        mr_fixed = -(
+                moment_p
+                + moment_udl
+                + moment_uvl
+                + moment_m
+        )
 
     theta_int += (r1 * x**2) / 2
     w_int += (r1 * x**3) / 6
@@ -166,7 +213,18 @@ def solve_beam(data: BeamInput, step: float = 0.01) -> BeamResult:
         sum_uvl_mom,
         sum_m_mom,
     )
-    return BeamResult(x, shear, moment, theta, deflection, float(r1), float(r2), report)
+    return BeamResult(
+        x,
+        shear,
+        moment,
+        theta,
+        deflection,
+        float(r1),
+        float(r2),
+        float(rv_fixed),
+        float(mr_fixed),
+        report
+    )
 
 
 def build_report(
