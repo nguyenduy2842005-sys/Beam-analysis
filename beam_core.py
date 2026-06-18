@@ -16,6 +16,7 @@ class BeamInput:
     uvls: list[tuple[float, float, float]] = field(default_factory=list)
 
 
+
 @dataclass
 class BeamResult:
     x: np.ndarray
@@ -27,11 +28,10 @@ class BeamResult:
     r1: float
     r2: float
 
-    rv_fixed: float = 0.0
-    mr_fixed: float = 0.0
+    rv_fixed: float
+    mr_fixed: float
 
-    report: str = ""
-
+    report: str
 
 def solve_beam(data: BeamInput, step: float = 0.01) -> BeamResult:
     """Port of the MATLAB GUIDE BeamAnalysis solve_Callback logic."""
@@ -223,7 +223,7 @@ def solve_beam(data: BeamInput, step: float = 0.01) -> BeamResult:
         float(r2),
         float(rv_fixed),
         float(mr_fixed),
-        report
+        report,
     )
 
 
