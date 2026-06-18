@@ -149,34 +149,57 @@ def validate_input(data: BeamInput) -> list[str]:
 
 def base_figure(title: str, length: float, y_title: str = "") -> go.Figure:
     fig = go.Figure()
+
     fig.update_layout(
-        title={"text": title, "x": 0.5, "font": {"size": 15}},
+        title=dict(
+            text=f"<b>{title}</b>",
+            x=0.5,
+            xanchor="center",
+            y=0.98,
+            yanchor="top",
+            font=dict(
+                size=18,
+                color="#263238"
+            )
+        ),
+
         height=PLOT_HEIGHT,
-        margin={"l": 58, "r": 18, "t": 44, "b": 44},
+
+        margin=dict(
+            l=55,
+            r=20,
+            t=65,      # tăng khoảng trống phía trên
+            b=45
+        ),
+
         paper_bgcolor=PLOT_BG,
         plot_bgcolor=PLOT_BG,
+
         showlegend=False,
-        xaxis={
-            "title": "x (m)",
-            "range": [-length / 20, 1.05 * length],
-            "gridcolor": GRID,
-            "zerolinecolor": AXIS,
-            "linecolor": AXIS,
-            "mirror": True,
-            "ticks": "outside",
-        },
-        yaxis={
-            "title": y_title,
-            "gridcolor": GRID,
-            "zerolinecolor": AXIS,
-            "linecolor": AXIS,
-            "mirror": True,
-            "ticks": "outside",
-        },
+
+        xaxis=dict(
+            title="x (m)",
+            range=[-length / 20, 1.05 * length],
+            gridcolor=GRID,
+            zerolinecolor=AXIS,
+            linecolor=AXIS,
+            mirror=True,
+            ticks="outside",
+            title_font=dict(size=14)
+        ),
+
+        yaxis=dict(
+            title=y_title,
+            gridcolor=GRID,
+            zerolinecolor=AXIS,
+            linecolor=AXIS,
+            mirror=True,
+            ticks="outside",
+            title_font=dict(size=14)
+        ),
     )
+
     return fig
-
-
 def draw_supports(fig: go.Figure, data: BeamInput) -> None:
     l = data.length
     if data.beam_type == "simple":
@@ -771,7 +794,7 @@ def main() -> None:
                 plot_bmd(result)
                 if result
                 else base_figure(
-                    "Bending Moment Diagram",
+                    "Moment Diagram",
                     data.length,
                     "kNm"
                 ),
